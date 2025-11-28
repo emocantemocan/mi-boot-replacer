@@ -6,7 +6,7 @@ api_level_arch_detect
 BOOT_DIR="/product/media"
 BACKUP_DIR="/data/adb/boot-backups"
 MODULE_ID=$(grep_prop id "$MODPATH/module.prop")
-MODULE_VER_CODE=$(expr "$(grep_prop versionCode "$MODPATH/module.prop")" + 0)
+MODULE_VER_CODE=$(($(grep_prop versionCode "$MODPATH/module.prop") + 0))
 
 # Recovery not recommended
 if [[ "$BOOTMODE" != true ]]; then
@@ -24,7 +24,16 @@ if [ "$API" -lt 30 ]; then
 fi
 
 key_check() {
+  local timeout=60
+  local start_time=$(date +%s)
   while true; do
+    # Check for timeout
+    local current_time=$(date +%s)
+    if [ $((current_time - start_time)) -ge $timeout ]; then
+      ui_print "! Key input timed out, defaulting to Volume [-]"
+      keycheck="KEY_VOLUMEDOWN"
+      return
+    fi
     key_check=$(/system/bin/getevent -qlc 1)
     key_event=$(echo "$key_check" | awk '{ print $3 }' | grep 'KEY_')
     key_status=$(echo "$key_check" | awk '{ print $4 }')
@@ -112,8 +121,19 @@ ui_print "  Model: $(getprop ro.product.model)"
 ui_print "  Android: $(getprop ro.build.version.release)"
 ui_print "*********************************************"
 
-# Create backup if not found
-if [ ! -d "$BACKUP_DIR" ]; then
+# Create backup if not found or empty
+backup_exists=false
+if [ -d "$BACKUP_DIR" ]; then
+  # Check if backup directory has bootanimation files
+  for file in "$BACKUP_DIR"/bootanimation*; do
+    if [ -f "$file" ]; then
+      backup_exists=true
+      break
+    fi
+  done
+fi
+
+if [ "$backup_exists" = false ]; then
   ui_print "- Do you want to backup your current boot animation?"
   ui_print "  Press the following keys to proceed:"
   ui_print "  Volume [+]: Backup (RECOMMENDED)"
