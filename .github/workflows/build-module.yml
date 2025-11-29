@@ -49,13 +49,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "📦 Fetching latest release..."
+          echo "Fetching latest release..."
 
           # Get the latest non-prerelease release
           RELEASE_INFO=$(gh release list --repo ${{ github.repository }} --exclude-drafts --exclude-pre-releases --limit 1 --json tagName,name)
 
           if [ -z "$RELEASE_INFO" ] || [ "$RELEASE_INFO" = "[]" ]; then
-            echo "❌ No releases found!"
+            echo "Error: No releases found!"
             echo "Please create a release first."
             exit 1
           fi
@@ -76,7 +76,7 @@ jobs:
           MODULE_ZIP=$(ls *.zip 2>/dev/null | head -n 1)
 
           if [ -z "$MODULE_ZIP" ]; then
-            echo "❌ No ZIP file found in release!"
+            echo "Error: No ZIP file found in release!"
             exit 1
           fi
 
@@ -87,7 +87,7 @@ jobs:
           mkdir -p ../build/module
           unzip -o "$MODULE_ZIP" -d ../build/module
 
-          echo "✅ Module extracted successfully"
+          echo "Module extracted successfully"
 
           # Show module info
           if [ -f "../build/module/module.prop" ]; then
@@ -145,7 +145,7 @@ jobs:
           else
             echo "files_found=false" >> $GITHUB_OUTPUT
             echo ""
-            echo "⚠️  No bootanimation files found!"
+            echo "Warning: No bootanimation files found!"
             echo ""
             echo "To use this workflow:"
             echo "1. Add your bootanimation.zip files to the 'bootanimations' folder"
@@ -164,7 +164,7 @@ jobs:
 
       - name: Prepare module structure
         run: |
-          echo "📦 Preparing module structure..."
+          echo "Preparing module structure..."
 
           # Determine target location (use input or default)
           TARGET_LOCATION="${{ github.event.inputs.target_location }}"
@@ -185,7 +185,7 @@ jobs:
 
       - name: Copy bootanimation files
         run: |
-          echo "📋 Copying bootanimation files..."
+          echo "Copying bootanimation files..."
 
           for file in bootanimations/*.zip; do
             if [ -f "$file" ]; then
@@ -201,7 +201,7 @@ jobs:
 
       - name: Validate bootanimation files
         run: |
-          echo "🔍 Validating bootanimation files..."
+          echo "Validating bootanimation files..."
           echo ""
 
           errors=0
@@ -216,24 +216,24 @@ jobs:
 
               # Validate ZIP integrity
               if ! unzip -t "$file" > /dev/null 2>&1; then
-                echo "  ❌ Invalid ZIP file!"
+                echo "  [ERROR] Invalid ZIP file!"
                 errors=$((errors + 1))
                 continue
               fi
 
               # Check for desc.txt
               if unzip -l "$file" 2>/dev/null | grep -q "desc.txt"; then
-                echo "  ✅ desc.txt found"
+                echo "  [OK] desc.txt found"
               else
-                echo "  ⚠️  Warning: desc.txt not found"
+                echo "  [WARN] desc.txt not found"
                 warnings=$((warnings + 1))
               fi
 
               # Check for part0/
               if unzip -l "$file" 2>/dev/null | grep -q "part0/"; then
-                echo "  ✅ part0/ found"
+                echo "  [OK] part0/ found"
               else
-                echo "  ⚠️  Warning: part0/ not found"
+                echo "  [WARN] part0/ not found"
                 warnings=$((warnings + 1))
               fi
 
@@ -242,14 +242,14 @@ jobs:
           done
 
           if [ $errors -gt 0 ]; then
-            echo "❌ Validation failed with $errors error(s)"
+            echo "Validation failed with $errors error(s)"
             exit 1
           fi
 
           if [ $warnings -gt 0 ]; then
-            echo "⚠️  Validation completed with $warnings warning(s)"
+            echo "Validation completed with $warnings warning(s)"
           else
-            echo "✅ All files validated successfully"
+            echo "All files validated successfully"
           fi
 
       - name: Get module info
@@ -267,7 +267,7 @@ jobs:
           echo "module_version=$MODULE_VERSION" >> $GITHUB_OUTPUT
           echo "module_author=$MODULE_AUTHOR" >> $GITHUB_OUTPUT
 
-          echo "📝 Module info:"
+          echo "Module info:"
           echo "  ID: $MODULE_ID"
           echo "  Name: $MODULE_NAME"
           echo "  Version: $MODULE_VERSION"
@@ -296,7 +296,7 @@ jobs:
           echo "zip_size=$ZIP_SIZE" >> $GITHUB_OUTPUT
 
           echo ""
-          echo "📦 Created: $ZIP_NAME ($ZIP_SIZE)"
+          echo "Created: $ZIP_NAME ($ZIP_SIZE)"
           echo ""
           echo "ZIP contents:"
           unzip -l "../$ZIP_NAME"
@@ -312,9 +312,9 @@ jobs:
       - name: Generate build summary
         run: |
           cat << 'EOF' >> $GITHUB_STEP_SUMMARY
-          # 🎉 Module Built Successfully!
+          # Module Built Successfully
 
-          ## 📦 Module Details
+          ## Module Details
 
           | Property | Value |
           |----------|-------|
@@ -326,7 +326,7 @@ jobs:
           | **Author** | ${{ steps.module_info.outputs.module_author }} |
           | **Target** | `${{ env.target_location }}` |
 
-          ## 📁 Included Bootanimations
+          ## Included Bootanimations
 
           EOF
 
@@ -340,13 +340,13 @@ jobs:
 
           cat << 'EOF' >> $GITHUB_STEP_SUMMARY
 
-          ## 📥 Download Instructions
+          ## Download Instructions
 
           1. Scroll down to the **Artifacts** section below
           2. Click on the module ZIP file to download
           3. The download will be a ZIP containing the module
 
-          ## 📲 Installation
+          ## Installation
 
           1. Extract the downloaded artifact (if needed)
           2. Flash the module ZIP using:
@@ -355,7 +355,7 @@ jobs:
              - **APatch** → Module → Install
           3. Reboot your device
 
-          ## ℹ️ Notes
+          ## Notes
 
           - The module will replace the boot animation on your device
           - A backup of the original animation will be created during installation
