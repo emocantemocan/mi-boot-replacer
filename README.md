@@ -85,10 +85,9 @@ You can use GitHub Actions to build a custom boot animation module without any l
 
 | Location | Description |
 |----------|-------------|
-| `system/product/media` | Default location (most devices) |
-| `system/media` | Legacy location |
-| `system/system_ext/media` | System extension media |
-| `system/product/media/theme/default` | Theme default location |
+| `/product/media` | Default location (most devices) |
+| `/system/media` | Legacy location |
+| `/system_ext/media` | System extension media |
 
 ### File Naming Convention
 
