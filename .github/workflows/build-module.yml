@@ -247,10 +247,11 @@ jobs:
         run: |
           PROP_FILE="build/module/module.prop"
 
-          MODULE_ID=$(grep "^id=" "$PROP_FILE" | cut -d= -f2)
-          MODULE_NAME=$(grep "^name=" "$PROP_FILE" | cut -d= -f2)
-          MODULE_VERSION=$(grep "^version=" "$PROP_FILE" | cut -d= -f2)
-          MODULE_AUTHOR=$(grep "^author=" "$PROP_FILE" | cut -d= -f2)
+          # Use tr -d to remove carriage returns (Windows line endings)
+          MODULE_ID=$(grep "^id=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
+          MODULE_NAME=$(grep "^name=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
+          MODULE_VERSION=$(grep "^version=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
+          MODULE_AUTHOR=$(grep "^author=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
 
           echo "module_id=$MODULE_ID" >> $GITHUB_OUTPUT
           echo "module_name=$MODULE_NAME" >> $GITHUB_OUTPUT
