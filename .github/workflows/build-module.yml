@@ -323,8 +323,12 @@ jobs:
           MODULE_VERSION="${{ steps.module_info.outputs.module_version }}"
 
           # Create a unique zip name with target location indicator
-          TARGET_SHORT=$(echo "${{ env.target_location }}" | sed 's/system\///g' | tr '/' '-')
+          # Remove leading slash and convert remaining slashes to dashes
+          TARGET_SHORT=$(echo "${{ env.target_location }}" | sed 's|^/||' | tr '/' '-')
           ZIP_NAME="${MODULE_ID}-${MODULE_VERSION}-${TARGET_SHORT}.zip"
+
+          # Artifact name without .zip (GitHub adds it automatically on download)
+          ARTIFACT_NAME="${MODULE_ID}-${MODULE_VERSION}-${TARGET_SHORT}"
 
           # Create ZIP with stored (no compression) mode for bootanimation compatibility
           echo "Creating ZIP with stored (no compression) mode..."
@@ -334,6 +338,7 @@ jobs:
           ZIP_SIZE=$(du -h "../$ZIP_NAME" | cut -f1)
 
           echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
           echo "zip_size=$ZIP_SIZE" >> $GITHUB_OUTPUT
 
           echo ""
@@ -345,7 +350,7 @@ jobs:
       - name: Upload module artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.create_zip.outputs.zip_name }}
+          name: ${{ steps.create_zip.outputs.artifact_name }}
           path: build/module
           retention-days: 90
           compression-level: 0
