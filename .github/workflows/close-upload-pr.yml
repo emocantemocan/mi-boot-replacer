@@ -24,6 +24,8 @@ jobs:
             const repoOwner = context.repo.owner;
             const isOwner = prAuthor.toLowerCase() === repoOwner.toLowerCase();
 
+            console.log(`PR Author: ${prAuthor}, Repo Owner: ${repoOwner}, Is Owner: ${isOwner}`);
+
             if (isOwner) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
@@ -32,12 +34,14 @@ jobs:
                 body: `⚠️ This PR modifies the \`upload/\` folder.`
               });
               console.log(`Warning added to PR #${prNumber}`);
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: `Hi @${prAuthor},
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `Hi @${prAuthor},
 
             This PR has been automatically closed because it modifies the \`upload/\` folder.
 
@@ -52,13 +56,12 @@ jobs:
             If you have a different contribution (bug fix, new template, etc.), please open a new PR without changes to the \`upload/\` folder.
 
             Thank you for your understanding!`
-              });
+            });
 
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-                state: 'closed'
-              });
-              console.log(`Closed PR #${prNumber}`);
-            }
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              state: 'closed'
+            });
+            console.log(`Closed PR #${prNumber}`);
