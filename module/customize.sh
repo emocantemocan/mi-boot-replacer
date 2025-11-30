@@ -211,11 +211,13 @@ if [ -d "$OLD_MODULE_DIR/system" ]; then
   ui_print "*********************************************"
   ui_print "- Existing module installation detected"
   ui_print "- Do you want to keep your current theme?"
-  ui_print "  Volume [+]: Keep current theme"
-  ui_print "  Volume [-]: Replace with new theme"
+  ui_print "  Volume [+]: Replace with new theme"
+  ui_print "  Volume [-]: Keep current theme (Default)"
   ui_print "*********************************************"
   key_check
   if [[ "$keycheck" == "KEY_VOLUMEUP" ]]; then
+    ui_print "- Replacing with new theme"
+  else
     ui_print "- Preserving your current theme..."
     # Remove the new module's system directory and copy the old one
     rm -rf "$MODPATH/system"
@@ -225,8 +227,6 @@ if [ -d "$OLD_MODULE_DIR/system" ]; then
     else
       ui_print "! Failed to preserve theme, using new theme instead"
     fi
-  else
-    ui_print "- Replacing with new theme"
   fi
 fi
 
@@ -268,7 +268,7 @@ fi
 if [ "$backup_exists" = false ]; then
   ui_print "- Do you want to backup your current boot animation?"
   ui_print "  Press the following keys to proceed:"
-  ui_print "  Volume [+]: Backup (RECOMMENDED)"
+  ui_print "  Volume [+]: Backup (Recommended)"
   ui_print "  Volume [-]: Skip"
   ui_print "*********************************************"
   key_check
