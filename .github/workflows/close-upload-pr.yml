@@ -1,7 +1,6 @@
 name: Auto Close Upload PRs
 
 # Automatically close PRs that modify the upload folder
-# The upload folder is for personal use only after forking
 
 on:
   pull_request_target:

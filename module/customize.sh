@@ -1,13 +1,14 @@
 SKIPUNZIP=0
 
-# Default boot animation location
+# Default boot animation
 BOOT_DIR="/product/media"
-BOOT_DIR_FROM_MODULE=false
-BACKUP_DIR="/data/adb/boot-backups"
+MODULE_BOOT_DIR=""
 MODULE_ID=$(grep_prop id "$MODPATH/module.prop")
 MODULE_NAME=$(grep_prop name "$MODPATH/module.prop")
 MODULE_VER_CODE=$(($(grep_prop versionCode "$MODPATH/module.prop") + 0))
 OLD_MODULE_DIR="/data/adb/modules/$MODULE_ID"
+BACKUP_DIR="/data/adb/boot-backups"
+BACKUP_EXISTS=false
 
 # Recovery not recommended
 if [[ "$BOOTMODE" != true ]]; then
@@ -48,51 +49,19 @@ key_check() {
   done
 }
 
-# Auto-detect boot animation location from module structure
-detect_boot_dir() {
-  local module_boot_dir=""
-
-  # Search for bootanimation.zip in module's system directory
-  if [ -f "$MODPATH/system/product/media/bootanimation.zip" ]; then
-    module_boot_dir="/product/media"
-  elif [ -f "$MODPATH/system/media/bootanimation.zip" ]; then
-    module_boot_dir="/system/media"
-  elif [ -f "$MODPATH/system_ext/media/bootanimation.zip" ]; then
-    module_boot_dir="/system_ext/media"
-  fi
-
-  if [ -n "$module_boot_dir" ]; then
-    # Module has a pre-configured path from build
-    BOOT_DIR="$module_boot_dir"
-    BOOT_DIR_FROM_MODULE=true
-  else
-    # Fallback: detect from device's existing bootanimation
-    BOOT_DIR_FROM_MODULE=false
-    if [ -f "/product/media/bootanimation.zip" ]; then
-      BOOT_DIR="/product/media"
-    elif [ -f "/system/media/bootanimation.zip" ]; then
-      BOOT_DIR="/system/media"
-    elif [ -f "/system_ext/media/bootanimation.zip" ]; then
-      BOOT_DIR="/system_ext/media"
-    else
-      BOOT_DIR="/product/media"
-    fi
-  fi
-}
-
-# Let user select boot animation location
+# Let user select boot animation directory
 select_boot_dir() {
-  ui_print "- Select boot animation location:"
+  ui_print "- Select boot animation path:"
   ui_print "- Press the following keys to proceed:"
   ui_print "  Volume [+]: Next option"
   ui_print "  Volume [-]: Confirm selection"
   ui_print "*********************************************"
 
-  # Available locations
+  # Available directories
   local current_index=0
   local total=3
 
-  # Find if detected location matches any option
+  # Find if detected directory matches any option
   case "$BOOT_DIR" in
     "/product/media") current_index=0 ;;
     "/system/media") current_index=1 ;;
@@ -203,8 +172,8 @@ DEVICE_BRAND=$(getprop ro.product.brand | tr '[:upper:]' '[:lower:]')
 if [[ "$DEVICE_BRAND" != "xiaomi" && "$DEVICE_BRAND" != "redmi" && "$DEVICE_BRAND" != "poco" ]]; then
   ui_print "! Warning: Non-Xiaomi device detected"
   ui_print "- This module is designed for Xiaomi/Redmi/POCO devices"
-  ui_print "- Theoretically it should still work, but unexpected behavior may occur on other devices"
-  ui_print "- If you think this is a mistake, please make sure you do not have any device spoofing related module enabled"
+  ui_print "- Theoretically it should still work, but keep in mind that unexpected behaviour may occur"
+  ui_print "- If you think this is a mistake, please make sure you do not have any device spoofing related module"
   ui_print "- Do you want to proceed with installation?"
   ui_print "  Volume [+]: Continue (At your own risk)"
   ui_print "  Volume [-]: Abort installation"
@@ -218,59 +187,88 @@ if [[ "$DEVICE_BRAND" != "xiaomi" && "$DEVICE_BRAND" != "redmi" && "$DEVICE_BRAN
   fi
 fi
 
+# Check for downgrade as new versions have a different backup structure which may or may not cause issues?
+if [ -f "$OLD_MODULE_DIR/module.prop" ]; then
+  OLD_MODULE_VER_CODE=$(($(grep_prop versionCode "$OLD_MODULE_DIR/module.prop") + 0))
+  ui_print "- Installed version: $OLD_MODULE_VER_CODE"
+  ui_print "- Installing version: $MODULE_VER_CODE"
+
+  if [ "$MODULE_VER_CODE" -lt "$OLD_MODULE_VER_CODE" ]; then
+    ui_print "! Downgrade detected!"
+    ui_print "! Cannot install $MODULE_VER_CODE over $OLD_MODULE_VER_CODE"
+    ui_print "! Please uninstall the current version first or install a newer version"
+    abort "*********************************************"
+  elif [ "$MODULE_VER_CODE" -eq "$OLD_MODULE_VER_CODE" ]; then
+    ui_print "- Same version detected, reinstalling..."
+  else
+    ui_print "- Upgrading from $OLD_MODULE_VER_CODE to $MODULE_VER_CODE"
+  fi
+  ui_print "*********************************************"
+fi
+
 # Check for existing module installation and preserve user's theme
 if [ -d "$OLD_MODULE_DIR/system" ]; then
-  ui_print "- Existing module installation detected"
-  ui_print "- Do you want to keep your current theme?"
-  ui_print "  Volume [+]: Replace with new theme"
-  ui_print "  Volume [-]: Keep current theme (Default)"
+  ui_print "- Found existing module installation"
+  ui_print "- Preserving current theme..."
+   rm -rf "$MODPATH/system"
+  cp -rf "$OLD_MODULE_DIR/system" "$MODPATH/system"
+  if [ $? -eq 0 ]; then
+    ui_print "- Current theme preserved successfully"
+  else
+    ui_print "! Failed to preserve theme, update cancelled"
+    abort "*********************************************"
+  fi
   ui_print "*********************************************"
+fi
+
+# Auto-detect boot animation directory from module structure
+# Search for bootanimation.zip in module's system directory
+if [ -f "$MODPATH/system/product/media/bootanimation.zip" ]; then
+  MODULE_BOOT_DIR="/product/media"
+elif [ -f "$MODPATH/system/media/bootanimation.zip" ]; then
+  MODULE_BOOT_DIR="/system/media"
+elif [ -f "$MODPATH/system_ext/media/bootanimation.zip" ]; then
+  MODULE_BOOT_DIR="/system_ext/media"
+fi
+
+if [ -n "$MODULE_BOOT_DIR" ]; then
+  BOOT_DIR="$MODULE_BOOT_DIR"
+  ui_print "- Module has a pre-configured path from build"
+  ui_print "- Path (from module): $BOOT_DIR"
+  ui_print "- Skipping path select user dialog"
+else
+  # Fallback, detect from device's existing bootanimation (edge case)
+  if [ -f "/product/media/bootanimation.zip" ]; then
+    BOOT_DIR="/product/media"
+  elif [ -f "/system/media/bootanimation.zip" ]; then
+    BOOT_DIR="/system/media"
+  elif [ -f "/system_ext/media/bootanimation.zip" ]; then
+    BOOT_DIR="/system_ext/media"
+  else
+    BOOT_DIR="/product/media"
+  fi
+
+  ui_print "- Detected path: $BOOT_DIR"
+  ui_print "- (May not match actual device path, please verify before proceeding)"
+  ui_print "- Do you want to change the path?"
+  ui_print "  Volume [+]: Change path"
+  ui_print "  Volume [-]: Use detected path"
   key_check
   if [[ "$keycheck" == "KEY_VOLUMEUP" ]]; then
-    ui_print "- Replacing with new theme"
+    select_boot_dir
   else
-    ui_print "- Preserving your current theme..."
-    # Remove the new module's system directory and copy the old one
-    rm -rf "$MODPATH/system"
-    cp -rf "$OLD_MODULE_DIR/system" "$MODPATH/system"
-    if [ $? -eq 0 ]; then
-      ui_print "- Current theme preserved successfully"
-    else
-      ui_print "! Failed to preserve theme, using new theme instead"
-    fi
+    ui_print "- Using: $BOOT_DIR"
   fi
 fi
 
-# Auto-detect location
-detect_boot_dir
-
-if [ "$BOOT_DIR_FROM_MODULE" = true ]; then
-  ui_print "- Boot animation path (from module): $BOOT_DIR"
-  ui_print "- Change location? (Not recommended)"
-  ui_print "  Volume [+]: Change location"
-  ui_print "  Volume [-]: Use module path (Recommended)"
-else
-  ui_print "- Detected boot animation location: $BOOT_DIR"
-  ui_print "- (May not match module's configured path, please verify before proceeding)"
-  ui_print "- Do you want to change the location?"
-  ui_print "  Volume [+]: Change location"
-  ui_print "  Volume [-]: Use detected path"
-fi
 ui_print "*********************************************"
-key_check
-if [[ "$keycheck" == "KEY_VOLUMEUP" ]]; then
-  select_boot_dir
-else
-  ui_print "- Using: $BOOT_DIR"
-fi
 
 # Create backup if not found or empty
-backup_exists=false
 if [ -d "$BACKUP_DIR" ]; then
   # Check if backup directory has bootanimation files
   for file in "$BACKUP_DIR"/bootanimation*; do
     if [ -f "$file" ]; then
-      backup_exists=true
+      BACKUP_EXISTS=true
       break
     fi
   done
@@ -279,7 +277,7 @@ fi
 if [ "$backup_exists" = false ]; then
   ui_print "- Do you want to backup your current boot animation?"
   ui_print "  Press the following keys to proceed:"
-  ui_print "  Volume [+]: Backup (Recommended)"
+  ui_print "  Volume [+]: Backup (Highly recommended)"
   ui_print "  Volume [-]: Skip"
   ui_print "*********************************************"
   key_check
@@ -303,7 +301,7 @@ ui_print "- Reboot to see new animations"
 ui_print ""
 ui_print "! If you don't see any changes after reboot:"
 ui_print "  You may have selected the wrong path"
-ui_print "  Try reinstalling and select a different location"
+ui_print "  Try reinstalling after selecting the correct one"
 ui_print "*********************************************"
 
 # End

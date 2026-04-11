@@ -1,4 +1,5 @@
-## v1.1.7
+## v1.2.0 - Final
 
-- Enhance module installation and safety checks
-- Better user prompts
+- Changed existing update behaviour to skip instead of asking the user
+- Finalized the module
+- This is the **final version**. Future updates will be minimal and limited to bug fixes only.

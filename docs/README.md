@@ -1,25 +1,26 @@
 # Xiaomi Custom Boot Animation
-English | [简体中文](/README_zh-CN.md)
+English | [简体中文](/docs/README_zh-CN.md) | [繁體中文](/docs/README_zh-HK.md)
 
 ## Introduction
-A simple module that replaces boot animations with custom ones and works on almost every Xiaomi device. This module is also compatible with tablets since, in contrast to phones, tablets frequently modify their animations according to the orientation of the device.
+A simple module that replaces boot animations with custom ones and works on almost every Xiaomi device. Probably can save you some time to build or troubleshoot. This module is also compatible with tablets since, in contrast to phones, tablets frequently modify their animations according to the orientation of the device.
 
-This module utilizes systemless mount to mount the bootanimation files to the specified location, ensuring no modifications are made to the system partition.
+This module utilizes systemless mount to mount the files, ensuring no modifications are made to the system partition.
 
 ## Requirements
 - Magisk v26.1+ / KernelSU v0.8.0+ / APatch 10568+
-- Android 11+ (API 30+) running MIUI/HyperOS
+- Android 11+ (API 30+) running MIUI / HyperOS
 
 > [!WARNING]
-> This module is designed for Magisk. KernelSU and APatch are not fully supported and unexpected bugs may occur.
+> This module can also work on other root managers with mounting function or phones with similar file structure, feel free to test it yourself but no support will be provided and functionality is not guaranteed.
 
-## Tested Devices
+## Test Records
 
-| Device | System Version | Status |
-|--------|----------------|:------:|
-| liuqin | V14.0.9.0.TMYCNXM (MIUI 14) | ✅ |
-| liuqin | OS2.0.203.0.VMYCNXM (HyperOS 2) | ✅ |
-| liuqin | OS2.0.212.0.VMYCNXM (HyperOS 2) | ✅ |
+| Device | System Version | Status | RM |
+|--------|----------------|:------:|------|
+| liuqin | V14.0.9.0.TMYCNXM | ✅ | Magisk |
+| liuqin | OS2.0.203.0.VMYCNXM | ✅ | Magisk |
+| liuqin | OS2.0.212.0.VMYCNXM | ✅ | Magisk |
+| liuqin | OS3.0.5.0.VMYCNXM | ✅ | Magisk / KSU + Any metamodule |
 
 <details>
 <summary>Device Code Reference</summary>
@@ -188,9 +189,6 @@ This module utilizes systemless mount to mount the bootanimation files to the sp
 
 </details>
 
-> [!NOTE]
-> This module should work on other models, brands, and systems, but further testing is needed. Feel free to report your results!
-
 ## Installation
 
 > [!CAUTION]
@@ -198,10 +196,8 @@ This module utilizes systemless mount to mount the bootanimation files to the sp
 
 1. Use the [GitHub Actions workflow](#github-actions-build-your-own-module) to build your custom module
 2. Download the built module from Artifacts
-3. Flash .zip module in the Magisk / KernelSU / APatch app
-
-> [!TIP]
-> If you get a blank screen after adding your own animation, it's likely because the ZIP file wasn't compressed right. Use "store-only" mode (no compression) when creating the ZIP.
+3. Flash the downloaded ZIP directly
+4. Reboot
 
 ## Backup and Restore
 
@@ -211,7 +207,7 @@ During the **first installation**, you'll be prompted to backup your current boo
 
 **First Install:**
 - When installing the module for the first time, if no backup exists, you'll be prompted to backup your current boot animation
-- Backups are stored in `/data/adb/boot-backups/` and include all `bootanimation*.zip` files from your selected location
+- Backups are stored in `/data/adb/boot-backups/` and include all `bootanimation*.zip` files from your selected directory
 
 **Module Updates:**
 - When updating the module, the backup process will be automatically skipped if a backup already exists
@@ -221,15 +217,13 @@ During the **first installation**, you'll be prompted to backup your current boo
 
 To restore your original boot animation:
 
-1. **Disable or uninstall this module** in Magisk/KernelSU/APatch
+1. **Simply disable or uninstall this module**
 2. **Reboot** your device
-
-> [!NOTE]
-> The module uses systemless mounting, so simply disabling it will automatically restore your original animations without manual file operations.
 
 ## To-Dos
 1. ~~Add GitHub Actions workflow for automated module building~~ (Done)
-2. Auto detect and select path for corresponding models
+2. ~~Auto detect and select path for corresponding models~~ (Probably not as device spoofer modules are commonly used)
+3. Video to boot
 
 ## GitHub Actions (Build Your Own Module)
 
@@ -238,26 +232,26 @@ You can use GitHub Actions to build a custom boot animation module without any l
 ### Method 1: Use a Template
 
 1. **Fork** this repository
-2. Go to **Actions** → **"Build Custom Boot Animation Module"**
+2. Go to **Actions** → **"Build Custom Module"**
 3. Click **"Run workflow"**
 4. Set **Source** to `template`
 5. Select your **Device model** (e.g., `liuqin`)
 6. Select the **Template** (e.g., `HyperOS`)
-7. Select the **Target location**
+7. Select the **Target directory**
 8. Download the built module from **Artifacts**
 
 > [!NOTE]
-> If there is no available template for your device, you must use Method 2 and upload your own bootanimation files.
+> If there is no matching template for your device, you must use [Method 2](#method-2-upload-custom-files) and upload your own bootanimation files.
 
 ### Method 2: Upload Custom Files
 
 1. **Fork** this repository
 2. Add your `bootanimation.zip` files to the `upload/` folder
 3. Commit and push your changes
-4. Go to **Actions** → **"Build Custom Boot Animation Module"**
+4. Go to **Actions** → **"Build Custom Module"**
 5. Click **"Run workflow"**
 6. Select `upload` as the source
-7. Select the **Target location**
+7. Select the **Target directory**
 8. Download the built module from **Artifacts**
 
 > [!TIP]
@@ -266,16 +260,16 @@ You can use GitHub Actions to build a custom boot animation module without any l
 > [!WARNING]
 > The `upload/` folder is for personal use in your fork only. Do not submit pull requests with changes to this folder - they will be automatically closed.
 
-### Available Target Locations
+### Available Target Directories
 
-| Location | Description |
+| Directories | Description |
 |----------|-------------|
-| `/product/media` | Default location (most devices) |
-| `/system/media` | Legacy location |
+| `/product/media` | Default directory |
+| `/system/media` | Legacy directory |
 | `/system_ext/media` | System extension media |
 
 > [!TIP]
-> If you don't see any change in the boot animation after installation, you may have selected the wrong path. Try reflashing the module and select a different location.
+> If you don't see any change in the boot animation after installation, you may have selected the wrong path. Try reflashing the module and select a different directory.
 
 ### File Naming Convention
 
@@ -320,11 +314,15 @@ p 0 5 part0
 - Second number = pause after loop (in frames)
 - Path = folder containing the frames
 
-> [!IMPORTANT]
-> Bootanimation ZIP files **must** use STORE compression (no compression). The workflow handles this automatically.
+> [!NOTE]
+> The GitHub Actions workflow automatically creates properly formatted module ZIP files using standard compression.
 
 ## Disclaimer
 **A bootloop saver module is strongly advised even if there is little possibility that flashing this module would cause your device to bootloop. I am not responsible for any damages caused to your device or data by using this module. Use at your own risk.**
+
+## Credits
+- [Magisk](https://github.com/topjohnwu/Magisk)
+- [sothx](https://github.com/sothx) - Key selector
 
 ## License
     This program is free software: you can redistribute it and/or modify

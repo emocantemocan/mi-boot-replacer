@@ -2,10 +2,6 @@ name: "NodeJs with Release"
 
 # This workflow is for maintainers/developers only
 
-# 1. Update module/module.prop with the new version
-# 2. Edit CHANGELOG.md
-# 3. Run
-
 run-name: "Release: v${{ inputs.version }} (${{ inputs.release_type }})"
 
 on:

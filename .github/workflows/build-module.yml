@@ -1,9 +1,9 @@
-name: Build Custom Boot Animation Module
+name: Build Custom Module
 
+# To run this workflow
 # 1. Fork this repo
-# 2. Choose a device template OR add custom bootanimation.zip files to the 'upload' folder
-# 3. Run this workflow manually
-# 4. Download the ready-to-flash module
+# 2. Choose a device template or add custom files to the 'upload' folder
+# 3. Run and download the module
 
 run-name: "Build: ${{ inputs.source == 'template' && format('{0}/{1}', inputs.device, inputs.theme) || 'upload' }} > ${{ inputs.target_location }}"
 
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: 'Bootanimation source'
+        description: 'Source'
         required: true
         default: 'upload'
         type: choice
@@ -19,14 +19,14 @@ on:
           - 'upload'
           - 'template'
       device:
-        description: 'Device model (only used when source is template)'
+        description: 'Device model (only applies when source is template)'
         required: false
         default: 'liuqin'
         type: choice
         options:
           - 'liuqin'
       theme:
-        description: 'Theme (only used when source is template)'
+        description: 'Theme (only applies when source is template)'
         required: false
         default: 'HyperOS'
         type: choice
@@ -35,7 +35,7 @@ on:
           - 'MIUI'
           - 'MIUI_inverted'
       target_location:
-        description: 'Where to place bootanimation files in the module'
+        description: 'Where to place bootanimation files in the system'
         required: true
         default: '/product/media'
         type: choice
@@ -47,7 +47,7 @@ on:
 jobs:
   build-module:
     runs-on: ubuntu-latest
-    name: Build Boot Animation Module
+    name: Build Module
 
     steps:
       - name: Checkout repository
@@ -232,7 +232,7 @@ jobs:
         run: |
           echo "Preparing module structure..."
 
-          # Determine target location (use input or default)
+          # Determine target location
           TARGET_LOCATION="${{ github.event.inputs.target_location }}"
           if [ -z "$TARGET_LOCATION" ]; then
             TARGET_LOCATION="/product/media"
@@ -244,7 +244,6 @@ jobs:
           echo "Module path: $MODULE_TARGET"
 
           # Remove all existing media directories to avoid conflicts
-          # Only keep the one we're targeting
           echo "Cleaning up existing media directories..."
 
           MEDIA_DIRS=(
@@ -256,7 +255,7 @@ jobs:
 
           for dir in "${MEDIA_DIRS[@]}"; do
             if [ -d "$dir" ]; then
-              # Check if this is the target or a parent of the target
+              # Check if this is the target or a parent of it
               TARGET_DIR_FULL="build/module/$MODULE_TARGET"
               if [[ "$TARGET_DIR_FULL" != "$dir"* ]]; then
                 echo "  Removing: $dir"
@@ -296,8 +295,6 @@ jobs:
         id: module_info
         run: |
           PROP_FILE="build/module/module.prop"
-
-          # Use tr -d to remove carriage returns (Windows line endings)
           MODULE_ID=$(grep "^id=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
           MODULE_NAME=$(grep "^name=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
           MODULE_VERSION=$(grep "^version=" "$PROP_FILE" | cut -d= -f2 | tr -d '\r')
@@ -314,46 +311,34 @@ jobs:
           echo "  Version: $MODULE_VERSION"
           echo "  Author: $MODULE_AUTHOR"
 
-      - name: Create module ZIP
-        id: create_zip
+      - name: Prepare module artifact
+        id: prepare_artifact
         run: |
-          cd build/module
-
           MODULE_ID="${{ steps.module_info.outputs.module_id }}"
           MODULE_VERSION="${{ steps.module_info.outputs.module_version }}"
 
-          # Create a unique zip name with target location indicator
-          # Remove leading slash and convert remaining slashes to dashes
+          # Create a unique artifact name with target location
           TARGET_SHORT=$(echo "${{ env.target_location }}" | sed 's|^/||' | tr '/' '-')
-          ZIP_NAME="${MODULE_ID}-${MODULE_VERSION}-${TARGET_SHORT}.zip"
-
-          # Artifact name without .zip (GitHub adds it automatically on download)
           ARTIFACT_NAME="${MODULE_ID}-${MODULE_VERSION}-${TARGET_SHORT}"
 
-          # Create ZIP with stored (no compression) mode for bootanimation compatibility
-          echo "Creating ZIP with stored (no compression) mode..."
-          zip -r -0 "../$ZIP_NAME" . -x "*.git*"
+          # Calculate module size
+          MODULE_SIZE=$(du -sh build/module | cut -f1)
 
-          # Get zip size
-          ZIP_SIZE=$(du -h "../$ZIP_NAME" | cut -f1)
-
-          echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
-          echo "zip_size=$ZIP_SIZE" >> $GITHUB_OUTPUT
+          echo "module_size=$MODULE_SIZE" >> $GITHUB_OUTPUT
 
           echo ""
-          echo "Created: $ZIP_NAME ($ZIP_SIZE)"
+          echo "Module prepared: $ARTIFACT_NAME ($MODULE_SIZE)"
           echo ""
-          echo "ZIP contents:"
-          unzip -l "../$ZIP_NAME"
+          echo "Module contents:"
+          ls -laR build/module
 
       - name: Upload module artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.create_zip.outputs.artifact_name }}
+          name: ${{ steps.prepare_artifact.outputs.artifact_name }}
           path: build/module
           retention-days: 90
-          compression-level: 0
 
       - name: Generate build summary
         run: |
@@ -378,8 +363,8 @@ jobs:
 
           | Property | Value |
           |----------|-------|
-          | **File** | \`${{ steps.create_zip.outputs.zip_name }}\` |
-          | **Size** | ${{ steps.create_zip.outputs.zip_size }} |
+          | **Artifact** | \`${{ steps.prepare_artifact.outputs.artifact_name }}.zip\` |
+          | **Size** | ${{ steps.prepare_artifact.outputs.module_size }} |
           | **Base Release** | ${{ steps.download_release.outputs.version }} |
           | **Source** | $SOURCE_DESC |
           | **Name** | ${{ steps.module_info.outputs.module_name }} |
@@ -401,18 +386,15 @@ jobs:
 
           cat << 'EOF' >> $GITHUB_STEP_SUMMARY
 
-          ## Download Instructions
+          ## Download & Installation
 
           1. Scroll down to the **Artifacts** section below
-          2. Click on the module ZIP file to download
-
-          ## Installation
-
-          1. Flash the downloaded module ZIP using:
+          2. Click on the artifact to download the module ZIP
+          3. Flash the downloaded ZIP directly using:
              - **Magisk Manager** → Modules → Install from storage
              - **KernelSU** → Module → Install
              - **APatch** → Module → Install
-          2. Reboot your device
+          4. Reboot your device
 
           ## Notes
 

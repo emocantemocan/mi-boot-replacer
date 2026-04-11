@@ -1,25 +1,26 @@
 # 小米自定义开机动画
-[English](/README.md) | 简体中文
+[English](/docs/README.md) | 简体中文 | [繁體中文](/docs/README_zh-HK.md)
 
 ## 介绍
-一个简单的模块，可以将默认的开机动画替换为自定义动画，并且几乎适用于所有小米设备。此模块也兼容平板设备，因为与手机不同，平板设备通常会根据设备方向调整其动画。
+一个简单的模块，可以将默认的开机动画替换为自定义动画，并且几乎适用于所有小米设备。所以应该可以帮你节省搭建或排除问题的时间。此模块也兼容平板设备，因为与手机不同，平板设备通常会根据设备方向调整其动画。
 
 此模块使用 systemless 挂载方式将开机动画文件挂载到指定位置，确保不会对系统分区进行任何修改。
 
 ## 要求
 - Magisk v26.1+ / KernelSU v0.8.0+ / APatch 10568+
-- Android 11+ (API 30+) 运行 MIUI/HyperOS
+- Android 11+ (API 30+) 运行 MIUI / HyperOS
 
 > [!WARNING]
-> 此模块专为 Magisk 设计。KernelSU 和 APatch 未获得完全支持，可能会出现意外错误。
+> 此模块也可以在其他具有挂载功能的 Root 管理器或具有类似文件结构的设备上运行，欢迎自行测试，但不会提供支持，也不保证功能正常。
 
-## 已测试设备
+## 测试记录
 
-| 设备 | 系统版本 | 状态 |
-|------|----------|:----:|
-| liuqin | V14.0.9.0.TMYCNXM (MIUI 14) | ✅ |
-| liuqin | OS2.0.203.0.VMYCNXM (HyperOS 2) | ✅ |
-| liuqin | OS2.0.212.0.VMYCNXM (HyperOS 2) | ✅ |
+| 设备 | 系统版本 | 状态 | RM |
+|------|----------|:----:|------|
+| liuqin | V14.0.9.0.TMYCNXM | ✅ | Magisk |
+| liuqin | OS2.0.203.0.VMYCNXM | ✅ | Magisk |
+| liuqin | OS2.0.212.0.VMYCNXM | ✅ | Magisk |
+| liuqin | OS3.0.5.0.VMYCNXM | ✅ | Magisk / KSU + 任何元模块 |
 
 <details>
 <summary>设备代码对照表</summary>
@@ -188,9 +189,6 @@
 
 </details>
 
-> [!NOTE]
-> 此模块应该可以在其他型号、品牌和系统上运行，但仍需进一步测试。欢迎反馈您的测试结果！
-
 ## 安装
 
 > [!CAUTION]
@@ -198,10 +196,8 @@
 
 1. 使用 [GitHub Actions 工作流程](#github-actions构建您自己的模块) 构建您的自定义模块
 2. 从 Artifacts 下载构建好的模块
-3. 在 Magisk / KernelSU / APatch 应用中刷入 .zip 模块
-
-> [!TIP]
-> 如果您在添加自己的动画主题后看到空白一片，则说明您没有正确压缩它，创建时请使用仅存储模式进行压缩（无压缩）。
+3. 在 Magisk / KernelSU / APatch 应用中直接刷入下载的 ZIP（无需先解压）
+4. 重启
 
 ## 备份与恢复
 
@@ -224,12 +220,10 @@
 1. 在 Magisk/KernelSU/APatch 中**禁用或卸载此模块**
 2. **重启**设备
 
-> [!NOTE]
-> 该模块使用 systemless 挂载方式，因此只需禁用它即可自动恢复原始动画，无需手动文件操作。
-
 ## 待办事项
 1. ~~添加 GitHub Actions 工作流程以自动构建模块~~（完成）
-2. 自动检测并选择相应的路径
+2. ~~自动检测并选择相应型号的路径~~（由于设备伪装模块的普遍使用，可能不会实现）
+3. 视频转开机动画
 
 ## GitHub Actions（构建您自己的模块）
 
@@ -238,7 +232,7 @@
 ### 方法一：使用模板
 
 1. **Fork** 此仓库
-2. 前往 **Actions** → **"Build Custom Boot Animation Module"**
+2. 前往 **Actions** → **"Build Custom Module"**
 3. 点击 **"Run workflow"**
 4. 将 **Source** 设置为 `template`
 5. 选择您的**设备型号**（例如 `liuqin`）
@@ -247,14 +241,14 @@
 8. 从 **Artifacts** 下载构建好的模块
 
 > [!NOTE]
-> 如果没有适用于您设备的模板，您必须使用方法二并上传您自己的开机动画文件。
+> 如果没有适用于您设备的模板，您必须使用[方法二](#method-2-upload-custom-files)并上传您自己的开机动画文件。
 
 ### 方法二：上传自定义文件
 
 1. **Fork** 此仓库
 2. 将您的 `bootanimation.zip` 文件添加到 `upload/` 文件夹
 3. 提交并推送您的更改
-4. 前往 **Actions** → **"Build Custom Boot Animation Module"**
+4. 前往 **Actions** → **"Build Custom Module"**
 5. 点击 **"Run workflow"**
 6. 选择 `upload` 作为来源
 7. 选择**目标位置**
@@ -270,12 +264,12 @@
 
 | 位置 | 描述 |
 |------|------|
-| `/product/media` | 默认位置（大多数设备） |
+| `/product/media` | 默认位置 |
 | `/system/media` | 传统位置 |
 | `/system_ext/media` | 系统扩展媒体 |
 
 > [!TIP]
-> 如果安装后开机动画没有任何变化，可能是您选择了错误的路径。请尝试重新刷入模块并选择其他位置。
+> 如果安装后开机动画没有任何变化，可能选择了错误的路径。请尝试重新刷入模块并选择其他位置。
 
 ### 文件命名规范
 
@@ -320,8 +314,8 @@ p 0 5 part0
 - 第二个数字 = 循环后暂停（以帧为单位）
 - 路径 = 包含帧的文件夹
 
-> [!IMPORTANT]
-> 开机动画 ZIP 文件**必须**使用 STORE 压缩（无压缩）。工作流程会自动处理此问题。
+> [!NOTE]
+> GitHub Actions 工作流程会自动使用标准压缩格式创建适合 Magisk 的模块 ZIP 文件。
 
 ## 免责声明
 **尽管刷写此模块导致设备进入引导循环的可能性很小，但仍强烈建议使用引导循环保护模块。对于使用此模块对您的设备或数据造成的任何损害，我概不负责。使用风险自负。**
